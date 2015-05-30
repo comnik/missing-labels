@@ -32,7 +32,7 @@ def output_predictions(classifier, infile, outfile):
     """
 
     X = get_features(infile)
-    Ypred = classifier.predict(X)
+    Ypred = classifier.predict_proba(X)
     np.savetxt(outfile, Ypred, delimiter=",", fmt="%i") # the last parameter converts the floats to ints
 
 def snapshot(model, snappath):
@@ -62,11 +62,11 @@ def main(argv):
     plt.ion()
 
     # Read labelled training data.
-    print('Loading data...')
+    print('Loading data...', end='\t')
 
     if '--reload' in argv:
         X = get_features('project_data/train.csv')
-        Y = np.genfromtxt('project_data/train_y.csv', delimiter=',')
+        Y = np.genfromtxt('project_data/train_y.csv', delimiter=',', dtype=np.int8)
 
         snapshot(X, 'snapshot/X.obj')
         snapshot(Y, 'snapshot/Y.obj')
@@ -81,20 +81,18 @@ def main(argv):
     print('Finished.')
 
     # Cross validation.
-    print('Training classifier...')
+    print('Training classifier...', end='\t')
 
     classifier = semi_supervised.LabelPropagation()
 
+    if '--cv' in argv:
+        scorefun = metrics.make_scorer(scorer)
+        scores = cross_validation.cross_val_score(classifier, X, Y, scoring=scorefun, cv=5)
+
+        print('Mean: %s +/- %s' % (np.mean(scores), np.std(scores)))
+
     if '--reclassify' in argv:
-        if '--cv' in argv:
-            scorefun = metrics.make_scorer(scorer)
-            scores = cross_validation.cross_val_score(classifier, X, Y, scoring=scorefun, cv=5)
-
-            print('Mean: %s +/- %s' % (np.mean(scores), np.std(scores)))
-
-        else:
-            classifier.fit(X, Y)
-
+        classifier.fit(X, Y)
         snapshot(classifier, 'snapshot/classifier.obj')
 
     else:
