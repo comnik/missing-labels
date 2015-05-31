@@ -66,7 +66,7 @@ def main(argv):
 
     if '--reload' in argv:
         X = get_features('project_data/train.csv')
-        Y = np.genfromtxt('project_data/train_y.csv', delimiter=',', dtype=np.int8)
+        Y = np.genfromtxt('project_data/train_y.csv', delimiter=',', dtype=np.int64)
 
         snapshot(X, 'snapshot/X.obj')
         snapshot(Y, 'snapshot/Y.obj')
@@ -75,15 +75,12 @@ def main(argv):
         X = load_snapshot('snapshot/X.obj')
         Y = load_snapshot('snapshot/Y.obj')
 
-        X = X[:20000]
-        Y = Y[:20000]
-
     print('Finished.')
 
     # Cross validation.
     print('Training classifier...', end='\t')
 
-    classifier = semi_supervised.LabelPropagation()
+    classifier = semi_supervised.LabelSpreading(gamma=0.25, max_iter=5)
 
     if '--cv' in argv:
         scorefun = metrics.make_scorer(scorer)
